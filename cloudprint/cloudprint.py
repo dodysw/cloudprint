@@ -20,6 +20,7 @@ import argparse
 import cups
 import datetime
 import hashlib
+import io
 import json
 import logging
 import logging.handlers
@@ -109,12 +110,12 @@ class CloudPrintAuth(object):
             },
             headers={'X-CloudPrint-Proxy': 'ArmoooIsAnOEM'},
         ).json()
-        print 'Goto {0} to clame this printer'.format(reg_data['complete_invite_url'])
+        print('Goto {0} to clame this printer'.format(reg_data['complete_invite_url']))
 
         end = time.time() + int(reg_data['token_duration'])
         while time.time() < end:
             time.sleep(10)
-            print 'trying for the win'
+            print('trying for the win')
             poll = requests.get(
                 reg_data['polling_url'] + CLIENT_ID,
                 headers={'X-CloudPrint-Proxy': 'ArmoooIsAnOEM'},
@@ -122,11 +123,11 @@ class CloudPrintAuth(object):
             if poll['success']:
                 break
         else:
-            print 'The login request timedout'
+            print('The login request timedout')
 
         self.xmpp_jid = poll['xmpp_jid']
         self.email = poll['user_email']
-        print 'Printer claimed by {0}.'.format(self.email)
+        print('Printer claimed by {0}.'.format(self.email))
 
         token = requests.post(
             'https://accounts.google.com/o/oauth2/token',
@@ -318,11 +319,11 @@ def match_re(prn, regexps, empty=False):
 
 
 def get_printer_info(cups_connection, printer_name):
-        with open(cups_connection.getPPD(printer_name)) as ppd_file:
-            ppd = ppd_file.read()
         #This is bad it should use the LanguageEncoding in the PPD
         #But a lot of utf-8 PPDs seem to say they are ISOLatin1
-        ppd = ppd.decode('utf-8')
+        with io.open(cups_connection.getPPD(printer_name), encoding='utf-8') as ppd_file:
+            ppd = ppd_file.read()
+
         description = cups_connection.getPrinterAttributes(printer_name)['printer-info']
         return ppd, description
 
@@ -367,7 +368,7 @@ def process_job(cups_connection, cpp, printer, job):
         if 'request' in options:
             del options['request']
 
-        options = dict((str(k), str(v)) for k, v in options.items())
+        options = dict((str(k), str(v)) for k, v in list(options.items()))
 
         # Cap the title length to 255, or cups will complain about invalid job-name
         cups_connection.printFile(printer.name, tmp.name, job['title'][:255], options)
@@ -442,8 +443,8 @@ def main():
         LOGGER.info('Setting DEBUG-level logging')
         LOGGER.setLevel(logging.DEBUG)
 
-        import httplib
-        httplib.HTTPConnection.debuglevel = 1
+        import http.client
+        http.client.HTTPConnection.debuglevel = 1
         requests_log = logging.getLogger("requests.packages.urllib3")
         requests_log.setLevel(logging.DEBUG)
         requests_log.propagate = True
@@ -464,7 +465,7 @@ def main():
     cpp.include = args.include
     cpp.exclude = args.exclude
 
-    printers = cups_connection.getPrinters().keys()
+    printers = list(cups_connection.getPrinters().keys())
     if not printers:
         LOGGER.error('No printers found')
         return
@@ -486,8 +487,8 @@ def main():
             import daemon
             import daemon.pidfile
         except ImportError:
-            print 'daemon module required for -d'
-            print '\tyum install python-daemon, or apt-get install python-daemon, or pip install cloudprint[daemon]'
+            print('daemon module required for -d')
+            print('\tyum install python-daemon, or apt-get install python-daemon, or pip install cloudprint[daemon]')
             sys.exit(1)
 
         pidfile = daemon.pidfile.TimeoutPIDLockFile(
