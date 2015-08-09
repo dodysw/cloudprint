@@ -373,7 +373,7 @@ def process_job(cups_connection, cpp, printer, job):
         # Cap the title length to 255, or cups will complain about invalid job-name
         cups_connection.printFile(printer.name, tmp.name, job['title'][:255], options)
         os.unlink(tmp.name)
-        LOGGER.info('SUCCESS ' + job['title'].encode('unicode-escape'))
+        LOGGER.info('SUCCESS ' + job['title'].encode('unicode-escape').decode('ascii'))
 
         cpp.finish_job(job['id'])
         num_retries = 0
@@ -382,10 +382,10 @@ def process_job(cups_connection, cpp, printer, job):
         if num_retries >= RETRIES:
             num_retries = 0
             cpp.fail_job(job['id'])
-            LOGGER.error('ERROR ' + job['title'].encode('unicode-escape'))
+            LOGGER.error('ERROR ' + job['title'].encode('unicode-escape').decode('ascii'))
         else:
             num_retries += 1
-            LOGGER.info('Job %s failed - Will retry' % job['title'].encode('unicode-escape'))
+            LOGGER.info('Job %s failed - Will retry' % job['title'].encode('unicode-escape').decode('ascii'))
 
 
 def process_jobs(cups_connection, cpp):
