@@ -34,7 +34,6 @@ import tempfile
 import time
 import uuid
 
-import xmpp
 
 XMPP_SERVER_HOST = 'talk.google.com'
 XMPP_SERVER_PORT = 5223
@@ -506,4 +505,7 @@ def main():
         process_jobs(cups_connection, cpp)
 
 if __name__ == '__main__':
+    import xmpp
     main()
+else:
+    from . import xmpp
